@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: %plugin.name
+Bundle-SymbolicName: com.kratos.birt.report.data.oda.kairosdb.ui;singleton:=true
+Bundle-Version: 1.0.0
+Bundle-Activator: com.kratos.birt.report.data.oda.kairosdb.ui.Activator
+Bundle-Vendor: KRATOS
+Bundle-Localization: plugin
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.datatools.connectivity.oda.design.ui;bundle-version="[3.2.0,4.0.0)",
+ com.kratos.birt.report.data.oda.kairosdb
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-ActivationPolicy: lazy
