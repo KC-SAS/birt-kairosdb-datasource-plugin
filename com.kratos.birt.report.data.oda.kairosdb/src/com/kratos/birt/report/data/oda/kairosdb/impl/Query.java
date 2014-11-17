@@ -1,6 +1,6 @@
 /*
  *************************************************************************
- * Copyright (c) 2014 <<Your Company Name here>>
+ * Copyright (c) 2014 <Kratos Integral Systems Europe>
  *  
  *************************************************************************
  */
@@ -43,6 +43,7 @@ import org.eclipse.datatools.connectivity.oda.SortSpec;
 import org.eclipse.datatools.connectivity.oda.spec.QuerySpecification;
 import org.kairosdb.client.HttpClient;
 import org.kairosdb.client.builder.QueryBuilder;
+import org.kairosdb.client.response.Queries;
 import org.kairosdb.client.response.QueryResponse;
 import org.kairosdb.client.response.Results;
 
@@ -88,6 +89,7 @@ public class Query implements IQuery
     private Map<Class, Map<String, PropertyDescriptor>> m_descriptorMap;
     private static final Validator VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
     private Gson m_gson;
+    private boolean displayMetricNameColumn;
     
 	public Query(String hostName) {
 		this.hostName = hostName;
@@ -117,7 +119,8 @@ public class Query implements IQuery
 		JsonArray metricsArray = obj.getAsJsonArray("metrics");
 		if (metricsArray == null) 
 			throw new OdaException("metric[] must have a size of at least 1");
-		
+		if (metricsArray.size() > 1) 
+			displayMetricNameColumn = true;
 		for (int I = 0; I < metricsArray.size(); I++)
 		{
 			String context = "query.metric[" + I + "]";
@@ -172,7 +175,6 @@ public class Query implements IQuery
 				}
 			}
 		}
-        System.out.println("queryText: "+queryText);
         
 //    	builder = QueryBuilder.getInstance();
 //    	builder.setStart(1, TimeUnit.DAYS)
@@ -211,7 +213,7 @@ public class Query implements IQuery
          * Replace with implementation to return an instance 
          * based on this prepared query.
          */
-		return new ResultSetMetaData(tagList,timeList,valueList);
+		return new ResultSetMetaData(tagList,timeList,valueList,displayMetricNameColumn);
 	}
 
 	/*
@@ -230,20 +232,19 @@ public class Query implements IQuery
 			}
 			client.shutdown();
 		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new OdaException(e);
 		} catch (URISyntaxException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new OdaException(e);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new OdaException(e);
 		}
 		
 		IResultSet resultSet = new ResultSet(response,tagList,timeList,valueList);
 		int nbFetched = 0;
-		for(Results result : response.getQueries().get(0).getResults()){
-			nbFetched += result.getDataPoints().size();
+		for(Queries query:response.getQueries()){
+			for(Results result : query.getResults()){
+				nbFetched += result.getDataPoints().size();
+			}
 		}
 		System.out.println("Nb points fetched: "+nbFetched);
 		resultSet.setMaxRows(nbFetched);
@@ -726,6 +727,8 @@ public class Query implements IQuery
 		}
 	}
     
+    // GROUP BY DESERIALIZATION METHODS (should be refactored into a deserializer class/package)
+    
     private PropertyDescriptor getPropertyDescriptor(Class objClass, String property) throws IntrospectionException
     {
     
@@ -747,11 +750,6 @@ public class Query implements IQuery
     	return (propMap.get(property));
 		
     }
-    
-	private void validateObject(Object object) throws BeanValidationException
-	{
-		validateObject(object, null);
-	}
 
 	private void validateObject(Object object, String context) throws BeanValidationException
 	{

@@ -1,6 +1,6 @@
 /*
  *************************************************************************
- * Copyright (c) 2014 <<Your Company Name here>>
+ * Copyright (c) 2014 <Kratos Integral Systems Europe>
  *  
  *************************************************************************
  */
@@ -32,12 +32,14 @@ public class ResultSetMetaData implements IResultSetMetaData
     private ArrayList<String> tagList;
     private ArrayList<Integer> valueList;
     private ArrayList<Duration> timeList;
+    private boolean displayMetricNameColumn;
 	
-	public ResultSetMetaData(TreeSet<String> tagList,TreeSet<Duration> timeList,TreeSet<Integer> valueList){
+	public ResultSetMetaData(TreeSet<String> tagList,TreeSet<Duration> timeList,TreeSet<Integer> valueList, boolean displayMetricName){
 		
 		this.tagList = new ArrayList<String>(tagList);
 		this.valueList = new ArrayList<Integer>(valueList);
-		this.timeList = new ArrayList<Duration>(timeList);	
+		this.timeList = new ArrayList<Duration>(timeList);
+		this.displayMetricNameColumn = displayMetricName;
 		
 	}
     
@@ -47,10 +49,9 @@ public class ResultSetMetaData implements IResultSetMetaData
 	@Override
 	public int getColumnCount() throws OdaException
 	{
-        // TODO replace with data source specific implementation
-
-        // hard-coded for demo purpose
-        return 2+tagList.size();
+		if(displayMetricNameColumn)
+			return 3+tagList.size()+valueList.size()+timeList.size();
+        return 2+tagList.size()+valueList.size()+timeList.size();
 	}
 
 	/*
@@ -59,13 +60,23 @@ public class ResultSetMetaData implements IResultSetMetaData
 	@Override
 	public String getColumnName( int index ) throws OdaException
 	{
+		if(displayMetricNameColumn){
+			index--;
+			if(index==0)
+				return "MetricName";
+		}
+		int groupingSize = tagList.size()+valueList.size()+timeList.size();
         if(index<=tagList.size()){
-        	return tagList.get(index-1);
-        }
-        else if(index == tagList.size()+1){
+        	return "tag:"+tagList.get(index-1);
+        } else if(index <= tagList.size() + valueList.size()){
+        	return "value:"+valueList.get(index-tagList.size()-1);
+        } else if(index <= groupingSize){
+        	Duration duration = timeList.get(index-tagList.size()-valueList.size()-1);
+        	return "time:"+duration.getValue()+duration.getUnit().toString();
+        } else if(index == groupingSize+1){
         	return TIMESTAMP;
         }
-        else if(index == tagList.size()+2){
+        else if(index == groupingSize+2){
         	return VALUE;
         }
         throw new OdaException("Illegal column index for getColumnName");
@@ -77,7 +88,26 @@ public class ResultSetMetaData implements IResultSetMetaData
 	@Override
 	public String getColumnLabel( int index ) throws OdaException
 	{
-		return getColumnName( index );		// default
+		if(displayMetricNameColumn){
+			index--;
+			if(index==0)
+				return "Metric Name";
+		}
+		int groupingSize = tagList.size()+valueList.size()+timeList.size();
+        if(index<=tagList.size()){
+        	return tagList.get(index-1);
+        } else if(index <= tagList.size() + valueList.size()){
+        	return valueList.get(index-tagList.size()-1)+" range value group";
+        } else if(index <= groupingSize){
+        	Duration duration = timeList.get(index-tagList.size()-valueList.size()-1);
+        	return duration.getValue()+duration.getUnit().toString()+" time group";
+        } else if(index == groupingSize+1){
+        	return TIMESTAMP;
+        }
+        else if(index == groupingSize+2){
+        	return VALUE;
+        }
+        throw new OdaException("Illegal column index for getColumnLabel");
 	}
 
 	/*
@@ -86,13 +116,21 @@ public class ResultSetMetaData implements IResultSetMetaData
 	@Override
 	public int getColumnType( int index ) throws OdaException
 	{
+		if(displayMetricNameColumn){
+			index--;
+		}
+		
+		int groupingSize = tagList.size()+valueList.size()+timeList.size();
         if(index<=tagList.size()){
         	return java.sql.Types.VARCHAR;
         }
-        else if(index == tagList.size()+1){
+        else if(index <= groupingSize){
+        	return java.sql.Types.INTEGER;
+        }
+        else if(index == groupingSize+1){
         	return java.sql.Types.TIMESTAMP;
         }
-        else if(index == tagList.size()+2){
+        else if(index == groupingSize+2){
         	return java.sql.Types.DOUBLE;
         	// TODO handle custom datatypes
         }
@@ -148,8 +186,13 @@ public class ResultSetMetaData implements IResultSetMetaData
 	@Override
 	public int isNullable( int index ) throws OdaException
 	{
-        // TODO Auto-generated method stub
-		return IResultSetMetaData.columnNullableUnknown;
+		if(displayMetricNameColumn){
+			index--;
+		}
+		if(index == tagList.size()+valueList.size()+timeList.size()+1){
+        	return IResultSetMetaData.columnNoNulls;
+        }
+		return IResultSetMetaData.columnNullable;
 	}
     
 }

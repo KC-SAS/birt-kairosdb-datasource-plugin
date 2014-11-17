@@ -1,2 +1,5 @@
 com.kratos.birt.report.data.oda.kairosdb/bin
 com.kratos.birt.report.data.oda.kairosdb.ui/bin
+.metadata
+RemoteSystemsTempFiles
+com.kratos.birt.report.data.oda.kairosdb/.classpath

@@ -1,6 +1,6 @@
 /*
  *************************************************************************
- * Copyright (c) 2014 <<Your Company Name here>>
+ * Copyright (c) 2014 <Kratos Integral Systems Europe>
  *  
  *************************************************************************
  */
@@ -12,6 +12,8 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.TreeSet;
 
 import org.eclipse.datatools.connectivity.oda.IBlob;
@@ -20,7 +22,10 @@ import org.eclipse.datatools.connectivity.oda.IResultSet;
 import org.eclipse.datatools.connectivity.oda.IResultSetMetaData;
 import org.eclipse.datatools.connectivity.oda.OdaException;
 import org.kairosdb.client.builder.DataFormatException;
+import org.kairosdb.client.response.GroupResult;
 import org.kairosdb.client.response.QueryResponse;
+import org.kairosdb.client.response.grouping.TimeGroupResult;
+import org.kairosdb.client.response.grouping.ValueGroupResult;
 
 import com.kratos.birt.report.data.oda.kairosdb.util.Duration;
 
@@ -38,21 +43,30 @@ public class ResultSet implements IResultSet
 	private int m_maxRows;
     private int m_currentRowId = -1;
     private QueryResponse response;
+    private int currentQuery = 0;
     private int currentSeries = 0;
     private int indexInCurrentSeries = -1;
     private ArrayList<String> tagList;
     private ArrayList<Integer> valueList;
     private ArrayList<Duration> timeList;
     private ResultSetMetaData resultSetMeta;
+    private boolean wasNull;
+    private boolean displayMetricNameColumn;
+    
+    private HashMap<Integer,Integer> timeValueGroupMap;
 	
     public ResultSet(QueryResponse response,TreeSet<String> tagList,TreeSet<Duration> timeList,TreeSet<Integer> valueList){
     	this.response = response;
     	
+    	// wasNull is a marker that indicates when a getXXX encountered a null value.
+    	this.wasNull = false;
+    	
 		this.tagList = new ArrayList<String>(tagList);
 		this.valueList = new ArrayList<Integer>(valueList);
 		this.timeList = new ArrayList<Duration>(timeList);	
+		this.displayMetricNameColumn = response.getQueries().size() > 1;
 		
-		resultSetMeta = new ResultSetMetaData(tagList, timeList, valueList);
+		resultSetMeta = new ResultSetMetaData(tagList, timeList, valueList,displayMetricNameColumn);
     }
     
 	/*
@@ -90,28 +104,73 @@ public class ResultSet implements IResultSet
 	@Override
 	public boolean next() throws OdaException
 	{
-		// TODO replace with data source specific implementation
-        
-        
         if( m_currentRowId < m_maxRows-1 )
         {
             m_currentRowId++;
-            while(response.getQueries().get(0).getResults().get(currentSeries).getDataPoints().size()==0){
-            	currentSeries++;
-            }
-            if(indexInCurrentSeries<response.getQueries().get(0).getResults().get(currentSeries).getDataPoints().size()-1){
+            
+            while(response.getQueries().get(currentQuery).getResults().get(currentSeries).getDataPoints().size()==0)
+            	switchSeries();
+
+            if(indexInCurrentSeries<response.getQueries().get(currentQuery).getResults().get(currentSeries).getDataPoints().size()-1){
             	indexInCurrentSeries++;
             } else {
             	indexInCurrentSeries = 0;
                 do { 
-                	currentSeries++;
-                } while(response.getQueries().get(0).getResults().get(currentSeries).getDataPoints().size()==0);
+                	switchSeries();
+                } while(response.getQueries().get(currentQuery).getResults().get(currentSeries).getDataPoints().size()==0);
 
             }
+            // if it is the first element of the series, generate the map for time and value groups
+            if(indexInCurrentSeries == 0)
+            	updateTimeValueMap();
+            
             return true;
         }
         
         return false;        
+	}
+	
+	private void switchSeries(){
+    	if(currentSeries<response.getQueries().get(currentQuery).getResults().size()-1)
+    		currentSeries++;
+    	else{
+    		currentSeries=0;
+    		currentQuery++;
+    	}
+	}
+	
+	/**
+	 * Creates a map of time and value groups at the beginning of each series
+	 */
+	private void updateTimeValueMap(){
+		HashMap<Integer,Integer> newMap = new HashMap<Integer,Integer>();
+		List<GroupResult> groupResults = response.getQueries().get(currentQuery).getResults().get(currentSeries).getGroupResults();
+		if(groupResults==null){
+			timeValueGroupMap = newMap;
+			return;
+		}
+		for (int i=tagList.size()+1; i<= tagList.size()+valueList.size();i++){
+			for(GroupResult groupResult:groupResults){
+				if(groupResult instanceof ValueGroupResult){
+					ValueGroupResult valueGroupResult = (ValueGroupResult)groupResult;
+					if(valueGroupResult.getRangeSize() == valueList.get(i-tagList.size()-1)){
+						newMap.put(i, valueGroupResult.getGroup().getGroupNumber());
+					}
+				}
+			}
+		}
+		for (int i=tagList.size() +valueList.size()+1; i<= tagList.size()+valueList.size() + timeList.size();i++){
+			for(GroupResult groupResult:groupResults){
+				if(groupResult instanceof TimeGroupResult){
+					TimeGroupResult timeGroupResult = (TimeGroupResult)groupResult;
+					if(timeGroupResult.getRangeSize().getValue() == timeList.get(i-tagList.size()-valueList.size()-1).getValue() 
+							&& timeGroupResult.getRangeSize().getUnit().equals(timeList.get(i-tagList.size()-valueList.size()-1).getUnit().name()) ){
+						newMap.put(i, timeGroupResult.getGroup().getGroupNumber());
+					}
+				}
+			}
+		}
+		timeValueGroupMap = newMap;
 	}
 
 	/*
@@ -140,8 +199,21 @@ public class ResultSet implements IResultSet
 	@Override
 	public String getString( int index ) throws OdaException
 	{
+		this.wasNull = false;
+		if(displayMetricNameColumn){
+			index--;
+			if(index==0)
+				return response.getQueries().get(currentQuery).getResults().get(currentSeries).getName();
+		}
 		if(index<=tagList.size()){
-			return response.getQueries().get(0).getResults().get(currentSeries).getTags().get(tagList.get(index-1)).get(0);
+			List<String> tagValues = response.getQueries().get(currentQuery).getResults().get(currentSeries).getTags().get(tagList.get(index-1));
+			if(tagValues==null){
+				this.wasNull = true;
+				return "";
+			}
+			if(tagValues.size()>1)
+				throw new OdaException("More than one tag value for '"+tagList.get(index-1)+"' despite grouping");
+			return tagValues.get(0);
 		}
         throw new OdaException("Illegal column index for getString");
 	}
@@ -161,10 +233,20 @@ public class ResultSet implements IResultSet
 	@Override
 	public int getInt( int index ) throws OdaException
 	{
-        // TODO replace with data source specific implementation
-        
-        // hard-coded for demo purpose
-        return getRow();
+		if(displayMetricNameColumn)
+			index--;
+		this.wasNull = false;
+		if(index>tagList.size() && index <= tagList.size()+valueList.size() + timeList.size()){
+			Integer result = timeValueGroupMap.get(index);
+			if(result !=null)
+				return result;
+			else{
+				this.wasNull = true;
+				return 0;
+			}
+		}
+			
+        throw new OdaException("Illegal column index for getString");
 	}
 
 	/*
@@ -182,8 +264,9 @@ public class ResultSet implements IResultSet
 	@Override
 	public double getDouble( int index ) throws OdaException
 	{
+		this.wasNull = false;
         try {
-			return response.getQueries().get(0).getResults().get(currentSeries).getDataPoints().get(indexInCurrentSeries).doubleValue();
+			return response.getQueries().get(currentQuery).getResults().get(currentSeries).getDataPoints().get(indexInCurrentSeries).doubleValue();
 		} catch (DataFormatException e) {
 			throw new OdaException("Illegal column index for getDouble");
 		}
@@ -261,7 +344,8 @@ public class ResultSet implements IResultSet
 	@Override
 	public Timestamp getTimestamp( int index ) throws OdaException
 	{
-        return new Timestamp(response.getQueries().get(0).getResults().get(currentSeries).getDataPoints().get(indexInCurrentSeries).getTimestamp());
+		this.wasNull = false;
+        return new Timestamp(response.getQueries().get(currentQuery).getResults().get(currentSeries).getDataPoints().get(indexInCurrentSeries).getTimestamp());
 	}
 
 	/*
@@ -355,25 +439,29 @@ public class ResultSet implements IResultSet
     @Override
 	public boolean wasNull() throws OdaException
     {
-        // TODO Auto-generated method stub
-        
-        // hard-coded for demo purpose
-        return false;
+        return wasNull;
     }
 
 
     @Override
 	public int findColumn( String columnName ) throws OdaException
     {
-
+    	int offset = 0;
+		if(displayMetricNameColumn)
+			offset = 1;
+    	System.out.println("findColumn called");
+    	int totalLength = tagList.size()+valueList.size()+timeList.size();
     	if(columnName.equals(ResultSetMetaData.TIMESTAMP)){
-    		return tagList.size()+1;
+    		return totalLength+1+offset;
     	}
     	else if(columnName.equals(ResultSetMetaData.VALUE)){
-    		return tagList.size()+2;
+    		return totalLength+2+offset;
     	}
-    	else if(tagList.contains(columnName)){
-    		return tagList.indexOf(columnName)+1;
+    	else if(columnName.startsWith("tag")){
+    		return tagList.indexOf(columnName.substring(4))+1+offset;
+    	}
+    	else if(columnName.startsWith("value") || columnName.startsWith("time")){
+    		throw new OdaException("FindColumn not implemented for value and time columns"); // +offset
     	}
     	throw new OdaException("Column not found");
     }

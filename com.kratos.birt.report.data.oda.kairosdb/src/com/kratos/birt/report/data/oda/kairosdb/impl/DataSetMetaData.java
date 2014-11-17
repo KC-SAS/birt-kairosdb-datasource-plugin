@@ -77,7 +77,7 @@ public class DataSetMetaData implements IDataSetMetaData
 	public String getDataSourceProductName() throws OdaException
 	{
         // TODO Auto-generated method stub
-		return "KRATOS Kairosdb Data Source";
+		return "Kairosdb Data Source";
 	}
 
 	/*

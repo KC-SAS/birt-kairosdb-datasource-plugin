@@ -7,12 +7,16 @@
 
 package com.kratos.birt.report.data.oda.kairosdb.impl;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.Properties;
 
 import org.eclipse.datatools.connectivity.oda.IConnection;
 import org.eclipse.datatools.connectivity.oda.IDataSetMetaData;
 import org.eclipse.datatools.connectivity.oda.IQuery;
 import org.eclipse.datatools.connectivity.oda.OdaException;
+import org.kairosdb.client.HttpClient;
+import org.kairosdb.client.response.GetResponse;
 
 import com.ibm.icu.util.ULocale;
 
@@ -33,7 +37,22 @@ public class Connection implements IConnection
 		String hostName = connProperties.getProperty("hostName");
 		String port = connProperties.getProperty("port");
 		queryURL = "http://"+hostName+":"+port;
-	    m_isOpen = true;        
+		// Use getMetricName to ping the server
+		try {
+			HttpClient client = new HttpClient(queryURL);
+			GetResponse response = client.getVersion();
+			m_isOpen = response.getStatusCode() == 200;   
+			if(m_isOpen == false)
+				throw new OdaException("Could not connect to server: "+response.getStatusCode());
+		} catch (MalformedURLException e) {
+			m_isOpen = false;
+			throw new OdaException(e);
+		} catch (IOException e) {
+			m_isOpen = false;
+			throw new OdaException(e);
+		}
+	         
+	    //System.out.println("open()");
  	}
 
 	/*
@@ -53,6 +72,7 @@ public class Connection implements IConnection
 	{
         // TODO replace with data source specific implementation
 	    m_isOpen = false;
+	    //System.out.println("close()");
 	}
 
 	/*
@@ -62,7 +82,9 @@ public class Connection implements IConnection
 	public boolean isOpen() throws OdaException
 	{
         // TODO Auto-generated method stub
+		//System.out.println("isOpen()");
 		return m_isOpen;
+		
 	}
 
 	/*
