@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: %plugin.name
 Bundle-SymbolicName: com.kratos.birt.report.data.oda.kairosdb;singleton:=true
 Bundle-Version: 1.0.0
-Bundle-ClassPath: com.kratos.birt.report.data.oda.kairosdb,
+Bundle-ClassPath: .,
  src,
  lib/kairosclient-2.0.jar,
  lib/gson-2.2.4.jar,
