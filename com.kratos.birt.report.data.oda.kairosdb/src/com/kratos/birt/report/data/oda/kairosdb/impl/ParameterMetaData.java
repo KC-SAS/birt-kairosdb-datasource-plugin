@@ -21,6 +21,16 @@ import org.eclipse.datatools.connectivity.oda.OdaException;
  */
 public class ParameterMetaData implements IParameterMetaData 
 {
+	private String startParameterName;
+	private String endParameterName;
+	
+	
+
+	public ParameterMetaData(String startParameterName, String endParameterName) {
+		super();
+		this.startParameterName = startParameterName;
+		this.endParameterName = endParameterName;
+	}
 
 	/* 
 	 * @see org.eclipse.datatools.connectivity.oda.IParameterMetaData#getParameterCount()
@@ -28,10 +38,10 @@ public class ParameterMetaData implements IParameterMetaData
 	@Override
 	public int getParameterCount() throws OdaException 
 	{
-        // TODO replace with data source specific implementation
-
-        // hard-coded for demo purpose
-        return 1;
+		if(startParameterName == null || endParameterName == null)
+			return 0;
+		else 
+			return 2;
 	}
 
     /*
@@ -40,7 +50,7 @@ public class ParameterMetaData implements IParameterMetaData
 	@Override
 	public int getParameterMode( int param ) throws OdaException 
 	{
-        // TODO Auto-generated method stub
+        // TODO What is this ????
 		return IParameterMetaData.parameterModeIn;
 	}
 
@@ -50,8 +60,12 @@ public class ParameterMetaData implements IParameterMetaData
     @Override
 	public String getParameterName( int param ) throws OdaException
     {
-        // TODO Auto-generated method stub
-        return null;    // name is not available
+        if(param==1)
+        	return startParameterName;    
+        else if(param==2)
+        	return endParameterName;
+        else
+        	throw new OdaException("Unkown parameter name");
     }
 
 	/* 
@@ -60,10 +74,12 @@ public class ParameterMetaData implements IParameterMetaData
 	@Override
 	public int getParameterType( int param ) throws OdaException 
 	{
-        // TODO replace with data source specific implementation
-
-        // hard-coded for demo purpose
-        return java.sql.Types.CHAR;   // as defined in data set extension manifest
+        if(param==1)
+        	return java.sql.Types.VARCHAR;    
+        else if(param==2)
+        	return java.sql.Types.VARCHAR;
+        else
+        	throw new OdaException("Unkown parameter type");
 	}
 
 	/* 
@@ -102,8 +118,8 @@ public class ParameterMetaData implements IParameterMetaData
 	@Override
 	public int isNullable( int param ) throws OdaException 
 	{
-        // TODO Auto-generated method stub
-		return IParameterMetaData.parameterNullableUnknown;
+        return IParameterMetaData.parameterNoNulls;
+
 	}
 
 }

@@ -13,7 +13,7 @@ import java.util.TreeSet;
 import org.eclipse.datatools.connectivity.oda.IResultSetMetaData;
 import org.eclipse.datatools.connectivity.oda.OdaException;
 
-import com.kratos.birt.report.data.oda.kairosdb.util.Duration;
+import com.kratos.birt.report.data.oda.kairosdb.json.Duration;
 
 /**
  * Implementation class of IResultSetMetaData for an ODA runtime driver.
@@ -33,15 +33,21 @@ public class ResultSetMetaData implements IResultSetMetaData
     private ArrayList<Integer> valueList;
     private ArrayList<Duration> timeList;
     private boolean displayMetricNameColumn;
+    private boolean isText;
 	
+    
 	public ResultSetMetaData(TreeSet<String> tagList,TreeSet<Duration> timeList,TreeSet<Integer> valueList, boolean displayMetricName){
-		
 		this.tagList = new ArrayList<String>(tagList);
 		this.valueList = new ArrayList<Integer>(valueList);
 		this.timeList = new ArrayList<Duration>(timeList);
 		this.displayMetricNameColumn = displayMetricName;
-		
+		this.isText = false;
 	}
+	
+	public void setValueAsText(boolean isText){
+		this.isText = isText;
+	}
+
     
 	/*
 	 * @see org.eclipse.datatools.connectivity.oda.IResultSetMetaData#getColumnCount()
@@ -131,8 +137,10 @@ public class ResultSetMetaData implements IResultSetMetaData
         	return java.sql.Types.TIMESTAMP;
         }
         else if(index == groupingSize+2){
-        	return java.sql.Types.DOUBLE;
-        	// TODO handle custom datatypes
+        	if(isText)
+        		return java.sql.Types.VARCHAR;
+        	else
+        		return java.sql.Types.DOUBLE;
         }
         else
         	throw new OdaException("Illegal column index for getColumnType");

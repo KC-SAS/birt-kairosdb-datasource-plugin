@@ -43,13 +43,13 @@ public class Connection implements IConnection
 			GetResponse response = client.getVersion();
 			m_isOpen = response.getStatusCode() == 200;   
 			if(m_isOpen == false)
-				throw new OdaException("Could not connect to server: "+response.getStatusCode());
+				throw new OdaException("Could not connect to server "+queryURL+" (Error code: "+response.getStatusCode()+")");
 		} catch (MalformedURLException e) {
 			m_isOpen = false;
-			throw new OdaException(e);
+			throw new OdaException("Invalid URL");
 		} catch (IOException e) {
 			m_isOpen = false;
-			throw new OdaException(e);
+			throw new OdaException("Could not connect to server "+queryURL);
 		}
 	         
 	    //System.out.println("open()");

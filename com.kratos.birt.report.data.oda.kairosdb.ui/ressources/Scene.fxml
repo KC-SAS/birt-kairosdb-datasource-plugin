@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.web.*?>
+<?import java.lang.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<Accordion fx:id="accordion" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.kratos.birt.report.data.oda.kairosdb.ui.FXMLController">
+  <panes>
+      <TitledPane animated="false" text="Time range parameter">
+        <content>
+          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+               <children>
+                  <CheckBox fx:id="isTimeParameter" layoutX="14.0" layoutY="6.0" mnemonicParsing="false" onAction="#isTimeParameterAction" text="Set time range as a parameter" AnchorPane.leftAnchor="10.0" />
+                  <Label fx:id="fromParameterLabel" disable="true" layoutX="52.0" layoutY="37.0" text="Start parameter name:" AnchorPane.leftAnchor="45.0" />
+                  <TextField fx:id="fromParameterField" disable="true" layoutX="185.0" layoutY="33.0" text="DSP_startDateTime" AnchorPane.leftAnchor="175.0" />
+                  <Label fx:id="toParameterLabel" disable="true" layoutX="53.0" layoutY="64.0" text="End parameter name:" AnchorPane.leftAnchor="45.0" />
+                  <TextField fx:id="toParameterField" disable="true" layoutX="195.0" layoutY="60.0" text="DSP_endDateTime" AnchorPane.leftAnchor="175.0" />
+                  <Label layoutX="39.6" layoutY="111.0" prefHeight="55.0" prefWidth="405.0" text="Help: if time range is set as a parameter, the start and stop values set in the query will not be taken into account. Instead it will be the value defined by the parameters that will be used for the query." wrapText="true" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" />
+               </children>
+            </AnchorPane>
+        </content>
+      </TitledPane>
+      <TitledPane animated="false" text="Value type">
+        <content>
+            <VBox>
+               <children>
+                  <Label text="Type of the time series values:">
+                     <VBox.margin>
+                        <Insets bottom="5.0" left="5.0" top="5.0" />
+                     </VBox.margin>
+                  </Label>
+                  <RadioButton fx:id="numberOnlyRadio" mnemonicParsing="false" selected="true" text="Numbers only">
+                     <toggleGroup>
+                        <ToggleGroup fx:id="type_group" />
+                     </toggleGroup>
+                     <tooltip>
+                        <Tooltip text="Text values will be set to null" />
+                     </tooltip>
+                     <VBox.margin>
+                        <Insets bottom="5.0" left="20.0" top="5.0" />
+                     </VBox.margin>
+                  </RadioButton>
+                  <RadioButton fx:id="textOnlyRadio" mnemonicParsing="false" text="Text only" toggleGroup="$type_group">
+                     <tooltip>
+                        <Tooltip text="Number values will be set to null" />
+                     </tooltip>
+                     <VBox.margin>
+                        <Insets bottom="5.0" left="20.0" top="5.0" />
+                     </VBox.margin>
+                  </RadioButton>
+                  <RadioButton fx:id="everythingTextRadio" mnemonicParsing="false" text="Everything as text" toggleGroup="$type_group">
+                     <tooltip>
+                        <Tooltip text="Every values will be considered as text" />
+                     </tooltip>
+                     <VBox.margin>
+                        <Insets bottom="5.0" left="20.0" top="5.0" />
+                     </VBox.margin>
+                  </RadioButton>
+               </children>
+            </VBox>
+        </content>
+      </TitledPane>
+    <TitledPane fx:id="builderPane" text="Query Builder">
+      <content>
+            <VBox>
+               <children>
+                  <HBox>
+                     <children>
+                        <Label text="Link: ">
+                           <HBox.margin>
+                              <Insets left="10.0" top="3.0" />
+                           </HBox.margin>
+                        </Label>
+                        <TextField fx:id="searchField" onKeyPressed="#keyPressed" prefWidth="300.0">
+                           <HBox.margin>
+                              <Insets bottom="5.0" left="5.0" />
+                           </HBox.margin>
+                        </TextField>
+                        <Button mnemonicParsing="false" onAction="#search" text="Go !">
+                           <HBox.margin>
+                              <Insets left="10.0" />
+                           </HBox.margin>
+                        </Button>
+                        <StackPane>
+                           <children>
+                              <ProgressIndicator fx:id="pageStatusProgress" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="15.0" prefWidth="15.0" visible="false" />
+                              <Label fx:id="pageStatusLabel" text="Label" textFill="#d00404" visible="false" />
+                           </children>
+                           <HBox.margin>
+                              <Insets left="10.0" />
+                           </HBox.margin>
+                        </StackPane>
+                     </children>
+                  </HBox>
+              <AnchorPane fx:id="browserContainer" prefWidth="200.0" VBox.vgrow="ALWAYS">
+                     <children>
+                        <WebView fx:id="browser" layoutX="48.0" layoutY="14.0" prefHeight="-1.0" prefWidth="-1.0" style="-fx-border-color: black; -fx-border-width: 1; -fx-border-style: solid;" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+                     </children>
+                  </AnchorPane>
+               </children>
+            </VBox>
+      </content>
+    </TitledPane>
+    <TitledPane fx:id="jsonPane" text="Raw Query">
+      <content>
+            <VBox>
+               <children>
+                  <Label text="Enter your query Json text here:">
+                     <VBox.margin>
+                        <Insets bottom="5.0" />
+                     </VBox.margin>
+                  </Label>
+              <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
+                     <children>
+                        <TextArea fx:id="queryArea" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+                     </children>
+                  </AnchorPane>
+               </children>
+            </VBox>
+      </content>
+    </TitledPane>
+  </panes>
+</Accordion>
