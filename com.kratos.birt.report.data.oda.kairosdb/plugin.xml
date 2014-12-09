@@ -28,6 +28,15 @@
                   name="port"
                   type="string">
             </property>
+            <property
+                  allowsEmptyValueAsNull="true"
+                  canInherit="true"
+                  defaultDisplayName="Query builder path"
+                  defaultValue="/"
+                  isEncryptable="false"
+                  name="path"
+                  type="string">
+            </property>
          </properties>
       </dataSource>
       <dataSet

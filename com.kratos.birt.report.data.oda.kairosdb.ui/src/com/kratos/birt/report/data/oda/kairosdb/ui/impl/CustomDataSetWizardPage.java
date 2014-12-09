@@ -143,7 +143,8 @@ public class CustomDataSetWizardPage extends DataSetWizardPage
 							getInitializationDesign().getDataSourceDesign() );
 			String hostName = connProps.getProperty("hostName");
 			String port = connProps.getProperty("port");
-			controller.setSearchFieldText("http://"+hostName+":"+port);
+			String path = connProps.getProperty("path");
+			controller.setSearchFieldText("http://"+hostName+":"+port+path);
 			controller.search();
 			
 		} catch (OdaException e) {
@@ -377,8 +378,8 @@ public class CustomDataSetWizardPage extends DataSetWizardPage
 		try {
 			int newLastColumn = columns.getResultColumnDefinitions().size()-1; // supposed to be the value column
 			int oldLastColumn = dataSetDesign.getPrimaryResultSet().getResultSetColumns().getResultColumnDefinitions().size()-1;
-			DataElementAttributes newValueAttributes = columns.getResultColumnDefinitions().get(oldLastColumn).getAttributes();
-			DataElementAttributes oldValueAttributes = dataSetDesign.getPrimaryResultSet().getResultSetColumns().getResultColumnDefinitions().get(newLastColumn).getAttributes();
+			DataElementAttributes newValueAttributes = columns.getResultColumnDefinitions().get(newLastColumn).getAttributes();
+			DataElementAttributes oldValueAttributes = dataSetDesign.getPrimaryResultSet().getResultSetColumns().getResultColumnDefinitions().get(oldLastColumn).getAttributes();
 			if(newValueAttributes.getNativeDataTypeCode()==oldValueAttributes.getNativeDataTypeCode())
 				newValueAttributes.setNativeDataTypeCode(newValueAttributes.getNativeDataTypeCode()+1000);
 		} catch (NullPointerException e){
