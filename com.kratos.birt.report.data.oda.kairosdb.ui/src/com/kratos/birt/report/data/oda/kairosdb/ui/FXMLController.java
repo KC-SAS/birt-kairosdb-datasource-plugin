@@ -1,3 +1,10 @@
+/*
+ *************************************************************************
+ * Copyright (c) 2014 <Kratos>
+ *  
+ *************************************************************************
+ */
+
 package com.kratos.birt.report.data.oda.kairosdb.ui;
 
 import static com.kratos.birt.report.data.oda.kairosdb.impl.Query.EVERYTHING_TEXT_VALUE;

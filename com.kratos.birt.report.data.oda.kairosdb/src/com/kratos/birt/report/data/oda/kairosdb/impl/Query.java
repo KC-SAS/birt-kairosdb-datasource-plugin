@@ -26,7 +26,6 @@ import org.eclipse.datatools.connectivity.oda.OdaException;
 import org.eclipse.datatools.connectivity.oda.SortSpec;
 import org.eclipse.datatools.connectivity.oda.spec.QuerySpecification;
 import org.kairosdb.client.HttpClient;
-import org.kairosdb.client.builder.QueryBuilder;
 import org.kairosdb.client.response.Queries;
 import org.kairosdb.client.response.QueryResponse;
 import org.kairosdb.client.response.Results;
@@ -54,11 +53,11 @@ public class Query implements IQuery
 	public static final String NUMBER_ONLY_VALUE = "numberOnlyValue";
 	public static final String EVERYTHING_TEXT_VALUE = "everythingTextValue";
 	
+	public static final int MAX_NUMBER_POINT = 1000000;
 	
 	private int m_maxRows;
 	private String m_preparedText;
 	private String hostName;
-	private QueryBuilder builder;
 	
 	// These sets represent group bys
 	private TreeSet<String> tagList;
@@ -74,7 +73,6 @@ public class Query implements IQuery
 	private String valueType;
 	
 	public Query(String hostName) {
-		System.out.println("new Query()");
 		this.hostName = hostName;
 		this.parser = new QueryParser();
 	}
@@ -85,7 +83,6 @@ public class Query implements IQuery
 	@Override
 	public void prepare( String queryText ) throws OdaException
 	{	
-		System.out.println("prepare(queryText)");
 		tagList = new TreeSet<String>();
 		timeList = new TreeSet<Duration>();
 		valueList = new TreeSet<Integer>();
@@ -132,7 +129,6 @@ public class Query implements IQuery
 	@Override
 	public IResultSetMetaData getMetaData() throws OdaException
 	{
-		System.out.println("getMetaData() in query");
 		return resultSetMetaData;
 	}
 
@@ -142,15 +138,12 @@ public class Query implements IQuery
 	@Override
 	public IResultSet executeQuery() throws OdaException
 	{
-		System.out.println("executeQuery()");
 		QueryResponse response = null;
 		try {
 			HttpClient client = new HttpClient(hostName);
 			if(m_preparedText!=null){
 				response = client.query(m_preparedText);
-			} else {
-				response = client.query(builder);
-			}
+			} 
 			client.shutdown();
 		} catch (MalformedURLException e) {
 			throw new OdaException(e);
@@ -165,10 +158,12 @@ public class Query implements IQuery
 		for(Queries query:response.getQueries()){
 			for(Results result : query.getResults()){	
 				nbFetched += result.getDataPoints().size();
+				if(nbFetched>MAX_NUMBER_POINT)
+					throw new OdaException("Error: this query is too big, it represents more than "+MAX_NUMBER_POINT+" points.");
 			}
 		}		
 		IResultSet resultSet = new ResultSet(response,tagList,timeList,valueList, resultSetMetaData, valueType);
-		System.out.println("Nb points fetched: "+nbFetched);
+
 		resultSet.setMaxRows(nbFetched);
 		return resultSet;
 	}
@@ -179,7 +174,6 @@ public class Query implements IQuery
 	@Override
 	public void setProperty( String name, String value ) throws OdaException
 	{
-		System.out.println("setProperty: ("+name+"/"+value+")");
 		if(name.equals(START_TIME_PARAMETER_NAME)){
 			this.startTimeParameterName = value;
 		} else if(name.equals(END_TIME_PARAMETER_NAME)){
@@ -287,10 +281,8 @@ public class Query implements IQuery
 		Parser parser = new Parser();
 		List<DateGroup> groups = parser.parse(value);
 		if(groups.size()>0){
-		  //System.out.println("groups size: "+groups.size());
 		  DateGroup dateGroup = groups.get(0);
 		  if(dateGroup.getDates().size()>0){
-			  //System.out.println("dateGroup size: "+dateGroup.getDates().size());
 			  setTimestamp(parameterName, new Timestamp(dateGroup.getDates().get(0).getTime()));
 		  }
 		}
@@ -305,10 +297,8 @@ public class Query implements IQuery
 		Parser parser = new Parser();
 		List<DateGroup> groups = parser.parse(value);
 		if(groups.size()>0){
-			//System.out.println("groups size: "+groups.size());
 		  DateGroup dateGroup = groups.get(0);
 		  if(dateGroup.getDates().size()>0){
-			  //System.out.println("dateGroup size: "+dateGroup.getDates().size());
 			  setTimestamp(parameterId, new Timestamp(dateGroup.getDates().get(0).getTime()));
 		  }
 		}

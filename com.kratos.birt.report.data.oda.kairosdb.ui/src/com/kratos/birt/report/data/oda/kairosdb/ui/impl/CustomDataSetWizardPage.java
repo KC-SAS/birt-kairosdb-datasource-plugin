@@ -1,6 +1,6 @@
 /*
  *************************************************************************
- * Copyright (c) 2014 <<Your Company Name here>>
+ * Copyright (c) 2014 <Kratos>
  *  
  *************************************************************************
  */
@@ -27,6 +27,7 @@ import org.eclipse.datatools.connectivity.oda.IParameterMetaData;
 import org.eclipse.datatools.connectivity.oda.IQuery;
 import org.eclipse.datatools.connectivity.oda.IResultSetMetaData;
 import org.eclipse.datatools.connectivity.oda.OdaException;
+import org.eclipse.datatools.connectivity.oda.design.DataElementAttributes;
 import org.eclipse.datatools.connectivity.oda.design.DataSetDesign;
 import org.eclipse.datatools.connectivity.oda.design.DataSetParameters;
 import org.eclipse.datatools.connectivity.oda.design.DesignFactory;
@@ -45,7 +46,6 @@ import org.eclipse.swt.widgets.Control;
 
 import com.kratos.birt.report.data.oda.kairosdb.json.QueryParser;
 import com.kratos.birt.report.data.oda.kairosdb.ui.FXMLController;
-
 /**
  * Auto-generated implementation of an ODA data set designer page
  * for an user to create or edit an ODA data set design instance.
@@ -111,7 +111,6 @@ public class CustomDataSetWizardPage extends DataSetWizardPage
 	 */
 	private Control createPageControl( Composite parent ) throws IOException
 	{
-		
 		Composite composite = new Composite( parent, SWT.NONE );
 		composite.setLayout( new GridLayout( 1, false ) );
 //		GridData gridData = new GridData( GridData.HORIZONTAL_ALIGN_FILL
@@ -165,7 +164,7 @@ public class CustomDataSetWizardPage extends DataSetWizardPage
 		 * To optionally restore the designer state of the previous design session, use
 		 *      getInitializationDesignerState(); 
 		 */
-
+		
 		// Restores the last saved data set design
 		DataSetDesign dataSetDesign = getInitializationDesign();
 		if( dataSetDesign == null || dataSetDesign.getQueryText() == null || dataSetDesign.getQueryText().equals("") ){
@@ -190,12 +189,6 @@ public class CustomDataSetWizardPage extends DataSetWizardPage
 		controller.setRawQueryAsDefault();
 		validateData();
 		setMessage( DEFAULT_MESSAGE );
-
-		/*
-		 * To optionally honor the request for an editable or
-		 * read-only design session, use
-		 *      isSessionEditable();
-		 */
 	}
 
 	/**
@@ -213,7 +206,6 @@ public class CustomDataSetWizardPage extends DataSetWizardPage
 	 */
 	protected DataSetDesign collectDataSetDesign( DataSetDesign design )
 	{
-		System.out.println("collectDataSetDesign( )");
 		if( getControl() == null )     // page control was never created
 			return design;             // no editing was done
 		if( ! hasValidData() )
@@ -228,13 +220,14 @@ public class CustomDataSetWizardPage extends DataSetWizardPage
 	 */
 	protected void collectResponseState( )
 	{
-		super.collectResponseState( );
+		super.collectResponseState( ); // this sets both to null
 		/*
 		 * To optionally assign a custom response state, for inclusion in the ODA
 		 * design session response, use 
 		 *      setResponseSessionStatus( SessionStatus status );
 		 *      setResponseDesignerState( DesignerState customState );
 		 */
+		
 	}
 
 	/*
@@ -302,21 +295,11 @@ public class CustomDataSetWizardPage extends DataSetWizardPage
 		IConnection customConn = null;
 		try
 		{
-			// instantiate your custom ODA runtime driver class
-			/* Note: You may need to manually update your ODA runtime extension's
-			 * plug-in manifest to export its package for visibility here.
-			 */
 			IDriver customDriver = new com.kratos.birt.report.data.oda.kairosdb.impl.Driver();
 
 			// obtain and open a live connection
 			customConn = customDriver.getConnection( null );
 			
-			// no need to open connection to get a query and its properties
-//			java.util.Properties connProps = 
-//					DesignSessionUtil.getEffectiveDataSourceProperties( 
-//							getInitializationDesign().getDataSourceDesign() );
-//          customConn.open( connProps );
-
 			// update the data set design with the 
 			// query's current runtime metadata
 			updateDesign( dataSetDesign, customConn, queryText );
@@ -326,9 +309,6 @@ public class CustomDataSetWizardPage extends DataSetWizardPage
 			// not able to get current metadata, reset previous derived metadata
 			dataSetDesign.setResultSets( null );
 			dataSetDesign.setParameters( null );
-			System.out.println("save page: catching exception:");
-			e.printStackTrace();
-			System.out.println("exception caught");
 		}
 		finally
 		{
@@ -392,15 +372,30 @@ public class CustomDataSetWizardPage extends DataSetWizardPage
 					throws OdaException
 	{
 		ResultSetColumns columns = DesignSessionUtil.toResultSetColumnsDesign( md );
+		
+		// workaround to force types to change
+		try {
+			int newLastColumn = columns.getResultColumnDefinitions().size()-1; // supposed to be the value column
+			int oldLastColumn = dataSetDesign.getPrimaryResultSet().getResultSetColumns().getResultColumnDefinitions().size()-1;
+			DataElementAttributes newValueAttributes = columns.getResultColumnDefinitions().get(oldLastColumn).getAttributes();
+			DataElementAttributes oldValueAttributes = dataSetDesign.getPrimaryResultSet().getResultSetColumns().getResultColumnDefinitions().get(newLastColumn).getAttributes();
+			if(newValueAttributes.getNativeDataTypeCode()==oldValueAttributes.getNativeDataTypeCode())
+				newValueAttributes.setNativeDataTypeCode(newValueAttributes.getNativeDataTypeCode()+1000);
+		} catch (NullPointerException e){
+			System.out.println("Result set not initialized yet, setting new value");
+		} 
+		
+//		for(ColumnDefinition col : columns.getResultColumnDefinitions()){
+//			System.out.println("column: "+col.getAttributes().getName()+" / "+col.getAttributes().getNativeDataTypeCode());
+//		}
 
 		ResultSetDefinition resultSetDefn = DesignFactory.eINSTANCE
 				.createResultSetDefinition();
-		// resultSetDefn.setName( value );  // result set name
 		resultSetDefn.setResultSetColumns( columns );
-
 		// no exception in conversion; go ahead and assign to specified dataSetDesign
 		dataSetDesign.setPrimaryResultSet( resultSetDefn );
-		dataSetDesign.getResultSets().setDerivedMetaData( true );
+		
+		dataSetDesign.getResultSets().setDerivedMetaData(true) ;
 	}
 
 	/**

@@ -33,8 +33,14 @@
       <dataSet
             defaultDisplayName="%data.set.name"
             id="com.kratos.birt.report.data.oda.kairosdb.dataSet">
+            <!-- Duplicate datatypes with value 1XXX are used in a workaround of a bug -->
          <dataTypeMapping
-               nativeDataTypeCode="1"
+               nativeDataTypeCode="12"
+               odaScalarDataType="String"
+               nativeDataType="String">
+         </dataTypeMapping>
+         <dataTypeMapping
+               nativeDataTypeCode="1012"
                odaScalarDataType="String"
                nativeDataType="String">
          </dataTypeMapping>
@@ -45,6 +51,11 @@
          </dataTypeMapping>
          <dataTypeMapping
                nativeDataTypeCode="8"
+               odaScalarDataType="Double"
+               nativeDataType="Double">
+         </dataTypeMapping>
+         <dataTypeMapping
+               nativeDataTypeCode="1008"
                odaScalarDataType="Double"
                nativeDataType="Double">
          </dataTypeMapping>
