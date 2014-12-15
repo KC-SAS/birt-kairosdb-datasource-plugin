@@ -27,7 +27,7 @@ public class Connection implements IConnection
 {
     private boolean m_isOpen = false;
     private String queryURL;
-    
+    private double maxSizeMB;
 	/*
 	 * @see org.eclipse.datatools.connectivity.oda.IConnection#open(java.util.Properties)
 	 */
@@ -36,6 +36,11 @@ public class Connection implements IConnection
 	{
 		String hostName = connProperties.getProperty("hostName");
 		String port = connProperties.getProperty("port");
+		try {
+			maxSizeMB = Double.parseDouble(connProperties.getProperty("maxSizeMB"));
+		} catch (NumberFormatException e){
+			throw new OdaException("Maximum response size must be a number");
+		}
 		queryURL = "http://"+hostName+":"+port;
 		// Use getMetricName to ping the server
 		try {
@@ -106,7 +111,7 @@ public class Connection implements IConnection
 	{
         // assumes that this driver supports only one type of data set,
         // ignores the specified dataSetType
-		return new Query(queryURL);
+		return new Query(queryURL,maxSizeMB);
 	}
 
 	/*

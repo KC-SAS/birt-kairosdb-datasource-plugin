@@ -5,7 +5,7 @@ Bundle-SymbolicName: com.kratos.birt.report.data.oda.kairosdb;singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Bundle-ClassPath: .,
  src,
- lib/kairosclient-2.0.jar,
+ lib/custom-kairos-client-2.0.jar,
  lib/gson-2.2.4.jar,
  lib/commons-io-2.2.jar,
  lib/commons-lang-2.6.jar,

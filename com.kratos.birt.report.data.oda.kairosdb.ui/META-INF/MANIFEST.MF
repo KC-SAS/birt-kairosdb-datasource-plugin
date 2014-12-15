@@ -17,4 +17,4 @@ Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: .,
  src,
  lib/jfxrt.jar,
- ressources/
+ resources/

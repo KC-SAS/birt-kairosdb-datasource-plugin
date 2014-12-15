@@ -504,6 +504,7 @@ public class ResultSet implements IResultSet {
 
 	@Override
 	public int findColumn(String columnName) throws OdaException {
+		System.out.println("ResultSet: find column");
 		int offset = 0;
 		if (displayMetricNameColumn)
 			offset = 1;

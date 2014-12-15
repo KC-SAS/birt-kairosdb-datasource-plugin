@@ -29,7 +29,9 @@ import org.kairosdb.client.HttpClient;
 import org.kairosdb.client.response.Queries;
 import org.kairosdb.client.response.QueryResponse;
 import org.kairosdb.client.response.Results;
+import org.kairosdb.client.util.ResponseSizeException;
 
+import com.google.gson.JsonIOException;
 import com.joestelmach.natty.DateGroup;
 import com.joestelmach.natty.Parser;
 import com.kratos.birt.report.data.oda.kairosdb.json.Duration;
@@ -48,34 +50,37 @@ public class Query implements IQuery
 	public static final String START_TIME_PARAMETER_NAME = "startTimeParameterName";
 	public static final String END_TIME_PARAMETER_NAME = "endTimeParameterName";
 	public static final String VALUE_TYPE = "valueType";
-	
+
 	public static final String TEXT_ONLY_VALUE = "textOnlyValue";
 	public static final String NUMBER_ONLY_VALUE = "numberOnlyValue";
-	public static final String EVERYTHING_TEXT_VALUE = "everythingTextValue";
-	
-	public static final int MAX_NUMBER_POINT = 1000000;
-	
+	public static final String EVERYTHING_TEXT_VALUE = "everythingTextValue";	
+
 	private int m_maxRows;
 	private String m_preparedText;
 	private String hostName;
-	
+
 	// These sets represent group bys
 	private TreeSet<String> tagList;
 	private TreeSet<Integer> valueList;
 	private TreeSet<Duration> timeList;
-	
+
 	private boolean displayMetricNameColumn;
 	private QueryParser parser;
 	private ResultSetMetaData resultSetMetaData;
 	private String startTimeParameterName;
 	private String endTimeParameterName;
-	
+	private double maxSizeMB;
+	private HttpClient client;
+
 	private String valueType;
-	
-	public Query(String hostName) {
+
+
+	public Query(String hostName, double maxSizeMB) {
 		this.hostName = hostName;
 		this.parser = new QueryParser();
+		this.maxSizeMB = maxSizeMB;
 	}
+
 
 	/*
 	 * @see org.eclipse.datatools.connectivity.oda.IQuery#prepare(java.lang.String)
@@ -94,14 +99,14 @@ public class Query implements IQuery
 	}
 
 
-//	public void setTimeParameters(String startTimeParameterName, String endTimeParameterName){
-//		this.startTimeParameterName = startTimeParameterName;
-//		this.endTimeParameterName = endTimeParameterName;
-//	}
-//	
-//	public void setTypeAsNumber(boolean isNumber){
-//		resultSetMetaData.setValueAsText(!isNumber);
-//	}
+	//	public void setTimeParameters(String startTimeParameterName, String endTimeParameterName){
+	//		this.startTimeParameterName = startTimeParameterName;
+	//		this.endTimeParameterName = endTimeParameterName;
+	//	}
+	//	
+	//	public void setTypeAsNumber(boolean isNumber){
+	//		resultSetMetaData.setValueAsText(!isNumber);
+	//	}
 
 
 	/*
@@ -142,24 +147,30 @@ public class Query implements IQuery
 		try {
 			HttpClient client = new HttpClient(hostName);
 			if(m_preparedText!=null){
-				response = client.query(m_preparedText);
+				///response = client.query(m_preparedText,(long)(maxSizeMB*1000000.));
+				response =client.query(m_preparedText,(long)(maxSizeMB*1000000.));
 			} 
 			client.shutdown();
 		} catch (MalformedURLException e) {
 			throw new OdaException(e);
 		} catch (URISyntaxException e) {
 			throw new OdaException(e);
-		} catch (IOException e) {
+		}  catch (JsonIOException e){
+			if(e.getCause() instanceof ResponseSizeException)
+				throw new OdaException("The reponse is larger than the limit set by the datasource ("+maxSizeMB+"MB)");
+			else
+				throw new OdaException(e);
+		}
+		catch (IOException e) {
 			throw new OdaException(e);
 		}
 
-		// If any series has type "String", all values are strings
 		int nbFetched = 0;
 		for(Queries query:response.getQueries()){
 			for(Results result : query.getResults()){	
 				nbFetched += result.getDataPoints().size();
-				if(nbFetched>MAX_NUMBER_POINT)
-					throw new OdaException("Error: this query is too big, it represents more than "+MAX_NUMBER_POINT+" points.");
+				//				if(nbFetched>MAX_NUMBER_POINT)
+				//					throw new OdaException("Error: this query is too big, it represents more than "+MAX_NUMBER_POINT+" points.");
 			}
 		}		
 		IResultSet resultSet = new ResultSet(response,tagList,timeList,valueList, resultSetMetaData, valueType);
@@ -179,8 +190,8 @@ public class Query implements IQuery
 		} else if(name.equals(END_TIME_PARAMETER_NAME)){
 			this.endTimeParameterName = value;
 		} else if(name.equals(VALUE_TYPE)){
-		    this.resultSetMetaData.setValueAsText(!value.equals(NUMBER_ONLY_VALUE));
-		    valueType = value;
+			this.resultSetMetaData.setValueAsText(!value.equals(NUMBER_ONLY_VALUE));
+			valueType = value;
 		}
 	}
 
@@ -281,10 +292,10 @@ public class Query implements IQuery
 		Parser parser = new Parser();
 		List<DateGroup> groups = parser.parse(value);
 		if(groups.size()>0){
-		  DateGroup dateGroup = groups.get(0);
-		  if(dateGroup.getDates().size()>0){
-			  setTimestamp(parameterName, new Timestamp(dateGroup.getDates().get(0).getTime()));
-		  }
+			DateGroup dateGroup = groups.get(0);
+			if(dateGroup.getDates().size()>0){
+				setTimestamp(parameterName, new Timestamp(dateGroup.getDates().get(0).getTime()));
+			}
 		}
 	}
 
@@ -297,12 +308,12 @@ public class Query implements IQuery
 		Parser parser = new Parser();
 		List<DateGroup> groups = parser.parse(value);
 		if(groups.size()>0){
-		  DateGroup dateGroup = groups.get(0);
-		  if(dateGroup.getDates().size()>0){
-			  setTimestamp(parameterId, new Timestamp(dateGroup.getDates().get(0).getTime()));
-		  }
+			DateGroup dateGroup = groups.get(0);
+			if(dateGroup.getDates().size()>0){
+				setTimestamp(parameterId, new Timestamp(dateGroup.getDates().get(0).getTime()));
+			}
 		}
-		
+
 	}
 
 	/*
@@ -462,7 +473,7 @@ public class Query implements IQuery
 	@Override
 	public IParameterMetaData getParameterMetaData() throws OdaException
 	{
-
+		System.out.println("getParameterMetaData");
 		return new ParameterMetaData(startTimeParameterName,endTimeParameterName);
 	}
 
@@ -525,8 +536,12 @@ public class Query implements IQuery
 	@Override
 	public void cancel() throws OdaException, UnsupportedOperationException
 	{
-		// assumes unable to cancel while executing a query
-		throw new UnsupportedOperationException();
+		System.out.println("cancel()");
+		try {
+			client.shutdown();
+		} catch (IOException e) {
+			throw new OdaException();
+		}
 	}
 
 

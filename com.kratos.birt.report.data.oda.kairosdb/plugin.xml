@@ -29,12 +29,21 @@
                   type="string">
             </property>
             <property
-                  allowsEmptyValueAsNull="true"
+                  allowsEmptyValueAsNull="false"
                   canInherit="true"
                   defaultDisplayName="Query builder path"
                   defaultValue="/"
                   isEncryptable="false"
                   name="path"
+                  type="string">
+            </property>
+            <property
+                  allowsEmptyValueAsNull="false"
+                  canInherit="true"
+                  defaultDisplayName="Maximum response size (MB)"
+                  defaultValue="50"
+                  isEncryptable="false"
+                  name="maxSizeMB"
                   type="string">
             </property>
          </properties>
