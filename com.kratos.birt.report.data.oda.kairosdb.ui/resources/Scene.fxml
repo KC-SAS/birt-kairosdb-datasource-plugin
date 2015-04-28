@@ -13,11 +13,19 @@
           <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                <children>
                   <CheckBox fx:id="isTimeParameter" layoutX="14.0" layoutY="6.0" mnemonicParsing="false" onAction="#isTimeParameterAction" text="Set time range as a parameter" AnchorPane.leftAnchor="10.0" />
-                  <Label fx:id="fromParameterLabel" disable="true" layoutX="52.0" layoutY="37.0" text="Start parameter name:" AnchorPane.leftAnchor="45.0" />
-                  <TextField fx:id="fromParameterField" disable="true" layoutX="185.0" layoutY="33.0" text="DSP_startDateTime" AnchorPane.leftAnchor="175.0" />
-                  <Label fx:id="toParameterLabel" disable="true" layoutX="53.0" layoutY="64.0" text="End parameter name:" AnchorPane.leftAnchor="45.0" />
-                  <TextField fx:id="toParameterField" disable="true" layoutX="195.0" layoutY="60.0" text="DSP_endDateTime" AnchorPane.leftAnchor="175.0" />
+                  <HBox layoutX="36.0" layoutY="40.0" prefHeight="31.0" prefWidth="433.0">
+                     <children>
+                        <Label fx:id="fromParameterLabel" disable="true" prefHeight="21.0" prefWidth="166.0" text="Start parameter name:" wrapText="true" />
+                        <TextField fx:id="fromParameterField" disable="true" prefHeight="31.0" prefWidth="231.0" text="DSP_startDateTime" />
+                     </children>
+                  </HBox>
                   <Label layoutX="39.6" layoutY="111.0" prefHeight="55.0" prefWidth="405.0" text="Help: if time range is set as a parameter, the start and stop values set in the query will not be taken into account. Instead it will be the value defined by the parameters that will be used for the query." wrapText="true" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" />
+                  <HBox layoutX="36.0" layoutY="71.0" prefHeight="31.0" prefWidth="396.0">
+                     <children>
+                        <Label fx:id="toParameterLabel" disable="true" prefHeight="21.0" prefWidth="170.0" text="End parameter name:" wrapText="true" />
+                        <TextField fx:id="toParameterField" disable="true" prefHeight="31.0" prefWidth="235.0" text="DSP_endDateTime" />
+                     </children>
+                  </HBox>
                </children>
             </AnchorPane>
         </content>
