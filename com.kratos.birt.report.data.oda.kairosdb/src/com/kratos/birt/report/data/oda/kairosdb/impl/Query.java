@@ -291,12 +291,13 @@ public class Query implements IQuery
 	{
 		Parser parser = new Parser();
 		List<DateGroup> groups = parser.parse(value);
-		if(groups.size()>0){
-			DateGroup dateGroup = groups.get(0);
-			if(dateGroup.getDates().size()>0){
-				setTimestamp(parameterName, new Timestamp(dateGroup.getDates().get(0).getTime()));
-			}
-		}
+		if(groups.size()!=1)
+			throw new OdaException("could not parse date");
+		
+		DateGroup dateGroup = groups.get(0);
+		if(dateGroup.getDates().size()!=1)
+			throw new OdaException("could not parse date");
+		setTimestamp(parameterName, new Timestamp(dateGroup.getDates().get(0).getTime()));
 	}
 
 	/*
@@ -307,13 +308,13 @@ public class Query implements IQuery
 	{
 		Parser parser = new Parser();
 		List<DateGroup> groups = parser.parse(value);
-		if(groups.size()>0){
-			DateGroup dateGroup = groups.get(0);
-			if(dateGroup.getDates().size()>0){
-				setTimestamp(parameterId, new Timestamp(dateGroup.getDates().get(0).getTime()));
-			}
-		}
-
+		if(groups.size()!=1)
+			throw new OdaException("could not parse date");
+		
+		DateGroup dateGroup = groups.get(0);
+		if(dateGroup.getDates().size()!=1)
+			throw new OdaException("could not parse date");
+		setTimestamp(parameterId, new Timestamp(dateGroup.getDates().get(0).getTime()));
 	}
 
 	/*
