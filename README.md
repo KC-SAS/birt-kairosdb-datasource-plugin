@@ -8,7 +8,7 @@ This is a plugin that allows BIRT to support KairosDB as datasource.
 
 - Download and install the <i>BIRT Designer All-in-one</i> release at https://www.eclipse.org/downloads/packages/eclipse-ide-java-and-report-developers/lunar
 - Download the release zip with the jar files in the release section of the Github project (you may also build the source)
-- Add the two jar folders in the release archive into the <b>dropins</b> folder of your BIRT installation.
+- Add the two jar files in the release archive into the <b>dropins</b> folder of your BIRT installation.
 - Start BIRT eclipse with a version of java 7 (the query builder will not work with other versions of java). To do so add
 ```
 -vm
